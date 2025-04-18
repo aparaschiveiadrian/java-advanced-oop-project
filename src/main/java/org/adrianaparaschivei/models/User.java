@@ -1,18 +1,28 @@
 package org.adrianaparaschivei.models;
 
 public abstract class User {
+    private static long nextId = 1;
+
+    private final long id;
     private String firstName;
     private String lastName;
     private final String username;
     private final String email;
     private String password;
 
+    public abstract String getDetails();
+
     public User(String firstName, String lastName, String username, String email, String password) {
+        this.id = nextId++;
         this.firstName = firstName;
         this.lastName = lastName;
         this.username = username;
         this.email = email;
         this.password = password;
+    }
+
+    public long getId() {
+        return id;
     }
 
     public String getFirstName() {
