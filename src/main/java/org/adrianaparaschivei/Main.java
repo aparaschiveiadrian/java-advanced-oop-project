@@ -18,6 +18,7 @@ public class Main {
 
         Course mathCourse = new Course("Matematica 6", "Inmultiri si Impartiri");
         Course physicsCourse = new Course("Fizica 1", "Introducere in fizica");
+        Course chemistryCourse = new Course("Chemistry", "apa e buna");
 
         teacherService.addCourse(teacher, mathCourse);
         teacherService.addCourse(teacher, physicsCourse);
@@ -26,6 +27,7 @@ public class Main {
         Student student2 = new Student("Alexandru", "Mircea", "alexandru_mircea", "alexandru.mircea@example.com", "parola123");
 
         studentService.enrollStudentInCourse(student1, mathCourse);
+        studentService.enrollStudentInCourse(student1, chemistryCourse);
         studentService.enrollStudentInCourse(student2, physicsCourse);
 
         studentService.printEnrolledCoursesDetails(student1);
