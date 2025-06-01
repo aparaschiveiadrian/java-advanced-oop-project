@@ -2,6 +2,9 @@
 
 Acest proiect reprezinta un sistem de e-learning implementat in Java. Sistemul permite gestionarea cursurilor, utilizatorilor, progresului studentilor si al profesorilor, precum si interactiuni de baza intre acestia. Proiectul include functionalitati precum inscrierea in cursuri, actualizarea progresului si gestionarea cursurilor de catre profesori.
 
+[Etapa 1 - Structura proiectului](#structura-proiectului-pentru-etapa-1)  
+[Etapa 2 - Persistenta si Servicii cu JDBC](#persistenta-si-servicii-cu-jdbc---etapa-2)
+
 ## Structura Proiectului pentru etapa 1
 
 ### Clasele principale:
@@ -99,7 +102,7 @@ Aceasta clasa pastreaza cursurile sub forma unui ***TreeSet***, factorul care de
 - **StudentService** si **TeacherService** sunt interfetele care ofera operatiile de manipulare a studentilor si profesorilor. Implementarile acestora permit gestionarea cursurilor, progresului si alte operatiuni.
 - **QuizService** si **ClassroomService** permit gestionarea quiz-urilor si a salilor de clasa, oferind functionalitati suplimentare pentru interactiunea intre studenti si profesori.
 
-# Persistenta si Servicii cu JDBC - Etapa 2
+## Persistenta si Servicii cu JDBC - Etapa 2
 
 In aceasta etapa a proiectului E-Learning, s-a adaugat persistenta datelor folosind o baza de date relationala (PostgreSQL) si JDBC. S-au implementat servicii pentru operatii CRUD (create, read, update, delete) pentru mai multe entitati, precum si un serviciu de audit care inregistreaza toate actiunile importante intr-un fisier CSV.
 
