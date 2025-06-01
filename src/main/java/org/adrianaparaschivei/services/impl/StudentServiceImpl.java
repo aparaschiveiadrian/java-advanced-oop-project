@@ -1,14 +1,16 @@
 package org.adrianaparaschivei.services.impl;
 
-import org.adrianaparaschivei.models.Course;
-import org.adrianaparaschivei.models.CourseProgress;
+import org.adrianaparaschivei.data.DBConnection;
 import org.adrianaparaschivei.models.Student;
-import org.adrianaparaschivei.services.StudentService;
+import org.adrianaparaschivei.services.CRUDService;
 
-import java.util.Map;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class StudentServiceImpl implements StudentService {
+public class StudentServiceImpl implements CRUDService<Student> {
     private static StudentServiceImpl instance;
+
     private StudentServiceImpl() {}
 
     public static StudentServiceImpl getInstance() {
@@ -19,53 +21,135 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public void enrollStudentInCourse(Student student, Course course) {
-        if (student.getAttendedCourses().contains(course)) {
-            System.out.println("Student is already enrolled in course: " + course.getTitle());
-            return;
-        }
+    public void create(Student student) {
+        String sql = "INSERT INTO users (first_name, last_name, username, email, password, user_type) VALUES (?, ?, ?, ?, ?, 'student')";
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        student.getAttendedCourses().add(course);
-        student.getProgressCourses().put(course, new CourseProgress());
-        System.out.println("Student " + student.getUsername() + " enrolled in course: " + course.getTitle());
+            stmt.setString(1, student.getFirstName());
+            stmt.setString(2, student.getLastName());
+            stmt.setString(3, student.getUsername());
+            stmt.setString(4, student.getEmail());
+            stmt.setString(5, "encrypted");
+
+            stmt.executeUpdate();
+            AuditService.getInstance().log("createStudent");
+            System.out.println("Studentul \"" + student.getUsername() + "\" a fost adaugat.");
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la crearea studentului: " + e.getMessage(), e);
+        }
+    }
+    public Long getIdByUsername(String username) {
+        String sql = "SELECT id FROM users WHERE username = ? AND user_type = 'student'";
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("id");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la cautarea studentului dupa username: " + e.getMessage(), e);
+        }
+        return null;
     }
 
     @Override
-    public void updateProgress(Student student, Course course, int percentage) {
-        CourseProgress progress = student.getProgressCourses().get(course);
-        if (progress != null) {
-            progress.setCompletionPercentage(percentage);
-            System.out.println("Progress updated for " + student.getUsername() + " in course: " + course.getTitle());
-        } else {
-            System.out.println("Student is not enrolled in course: " + course.getTitle());
+    public Student read(long id) {
+        String sql = "SELECT first_name, last_name, username, email, password FROM users WHERE id = ? AND user_type = 'student'";
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Student student = new Student(
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password")
+                );
+                AuditService.getInstance().log("readStudent");
+                System.out.println("Student gasit: " + student.getUsername());
+                return student;
+            } else {
+                System.out.println("Nu exista student cu ID-ul: " + id);
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la citirea studentului: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void printEnrolledCoursesDetails(Student student) {
-        if (student.getAttendedCourses().isEmpty()) {
-            System.out.println(student.getUsername() + " is not enrolled in any courses.");
-            return;
-        }
+    public List<Student> readAll() {
+        String sql = "SELECT first_name, last_name, username, email, password FROM users WHERE user_type = 'student'";
+        List<Student> students = new ArrayList<>();
 
-        System.out.println("Courses for student " + student.getUsername() + ":");
-        for (Course course : student.getAttendedCourses()) {
-            System.out.println("- " + course.getTitle() + ": " + course.getDescription());
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                students.add(new Student(
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password")
+                ));
+            }
+            AuditService.getInstance().log("readAllStudents");
+            System.out.println("Toti studentii au fost cititi din baza de date.");
+            return students;
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la citirea studentilor: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void printProgressForCourses(Student student) {
-        if (student.getProgressCourses().isEmpty()) {
-            System.out.println("No progress found for " + student.getUsername());
-            return;
-        }
+    public void update(Student student) {
+        String sql = "UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE username = ? AND user_type = 'student'";
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        System.out.println("Progress for " + student.getUsername() + ":");
-        for (Map.Entry<Course, CourseProgress> entry : student.getProgressCourses().entrySet()) {
-            Course course = entry.getKey();
-            CourseProgress progress = entry.getValue();
-            System.out.println("- " + course.getTitle() + ": " + progress.getCompletionPercentage() + "%");
+            stmt.setString(1, student.getFirstName());
+            stmt.setString(2, student.getLastName());
+            stmt.setString(3, student.getEmail());
+            stmt.setString(4, "encrypted");
+            stmt.setString(5, student.getUsername());
+
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                AuditService.getInstance().log("updateStudent");
+                System.out.println("Studentul \"" + student.getUsername() + "\" a fost actualizat.");
+            } else {
+                System.out.println("Studentul nu a fost gasit: " + student.getUsername());
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la actualizarea studentului: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void delete(long id) {
+        String sql = "DELETE FROM users WHERE id = ? AND user_type = 'student'";
+        try (Connection conn = DBConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                AuditService.getInstance().log("deleteStudent");
+                System.out.println("Studentul cu ID-ul " + id + " a fost sters.");
+            } else {
+                System.out.println("Nu exista student cu ID-ul: " + id);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Eroare la stergerea studentului: " + e.getMessage(), e);
         }
     }
 }

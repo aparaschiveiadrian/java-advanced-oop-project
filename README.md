@@ -98,3 +98,76 @@ Aceasta clasa pastreaza cursurile sub forma unui ***TreeSet***, factorul care de
 - **Classroom** reprezinta o sala de clasa in care profesorii pot adauga studenti, iar acestia pot interactiona in cadrul clasei.
 - **StudentService** si **TeacherService** sunt interfetele care ofera operatiile de manipulare a studentilor si profesorilor. Implementarile acestora permit gestionarea cursurilor, progresului si alte operatiuni.
 - **QuizService** si **ClassroomService** permit gestionarea quiz-urilor si a salilor de clasa, oferind functionalitati suplimentare pentru interactiunea intre studenti si profesori.
+
+# Persistenta si Servicii cu JDBC - Etapa 2
+
+In aceasta etapa a proiectului E-Learning, s-a adaugat persistenta datelor folosind o baza de date relationala (PostgreSQL) si JDBC. S-au implementat servicii pentru operatii CRUD (create, read, update, delete) pentru mai multe entitati, precum si un serviciu de audit care inregistreaza toate actiunile importante intr-un fisier CSV.
+
+## Conexiunea la baza de date
+
+Conexiunea se realizeaza prin clasa `DBConnection`, un singleton care deschide conexiunea la baza de date PostgreSQL folosind urmatoarele detalii:
+
+- Nume baza de date: `ELearningDB`
+- Username: `postgres`
+- Parola: `password`
+- Port: `5432`
+
+## Crearea tabelelor
+
+Tabelele sunt create prin clasa `SchemaInit`, care contine o metoda statica `createTable`. In `Main`, sunt definite si apelate toate instructiunile SQL necesare pentru crearea tabelelor daca nu exista deja.
+
+## Servicii CRUD
+
+Am creat o interfata generica `CRUDService<T>`, care defineste operatii standard de creare, citire, actualizare si stergere. Pentru urmatoarele clase au fost implementate servicii:
+
+- `CourseProgressServiceImpl` – gestioneaza progresul studentilor intr-un curs (INSERT, SELECT, UPDATE, DELETE din tabela `course_progress`)
+- `CourseServiceImpl` – gestioneaza cursurile (INSERT, SELECT, UPDATE, DELETE din tabela `courses`)
+- `StudentServiceImpl` – gestioneaza studentii (INSERT, SELECT, UPDATE, DELETE din tabela `users`, doar pentru user_type = 'student')
+- `TeacherServiceImpl` – gestioneaza relatia dintre profesori si cursuri, si opereaza pe structurile din memorie
+
+Toate aceste clase sunt singleton si implementeaza `CRUDService<T>`.
+
+## Serviciul de Audit
+
+S-a creat un serviciu `AuditService`, care este un singleton si scrie in fisierul `audit.csv` fiecare actiune efectuata (ex: creare student, actualizare curs). Formatul este:
+
+```
+actiune,timestamp
+```
+
+Acest serviciu este apelat in toate metodele CRUD relevante.
+
+## Exemplu de functionalitate in `Main`
+
+In clasa `Main` se:
+
+- initializeaza tabelele
+- adauga un student si un curs
+- extrage ID-urile corespunzatoare
+- adauga progres pentru student la curs
+- actualizeaza progresul
+- sterge progresul, cursul si studentul
+- inchide conexiunea la baza de date
+
+```java
+Student student = new Student("Ion", "Popescu", "ionpop", "ion@email.com", "parola");
+studentService.create(student);
+Course course = new Course("Programare Java", "bazele limbajului Java");
+courseService.create(course);
+Long studentId = studentService.getIdByUsername("ionpop");
+Long courseId = courseService.getIdByTitle("Programare Java");
+if (studentId != null && courseId != null) {
+    CourseProgress progress = new CourseProgress();
+    progress.setCompletionPercentage(40);
+    progressService.create(progress, studentId, courseId);
+    progress.setCompletionPercentage(85);
+    progressService.update(progress, studentId, courseId);
+    progressService.deleteByStudentAndCourse(studentId, courseId);
+    courseService.delete(courseId);
+    studentService.delete(studentId);
+}
+```
+
+## Concluzie
+
+Proiectul este structurat modular, folosind servicii singleton pentru interactiunea cu baza de date si servicii de audit pentru urmarirea actiunilor efectuate. Aceasta arhitectura permite extinderea usoara a sistemului si ofera o separare clara intre logica de afaceri si persistenta.
